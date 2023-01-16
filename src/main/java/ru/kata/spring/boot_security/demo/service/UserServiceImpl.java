@@ -1,6 +1,7 @@
 package ru.kata.spring.boot_security.demo.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,15 +19,61 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class UserServiceImpl implements UserDetailsService {
+public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    @Transactional
+    public void addNewUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    public User findById(Integer id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("No such user in database!"));
+    }
+
+    @Override
+    @Transactional
+    public void updateUser(User user) {
+        userRepository
+                .findById(user.getId())
+                .ifPresent(newUser -> {
+                    newUser.setUsername(user.getUsername());
+                    newUser.setAge(user.getAge());
+                    newUser.setEmail(user.getEmail());
+                    newUser.setUserRoles(user.getUserRoles());
+                    if (user.getPassword().equals(newUser.getPassword())) {
+                        newUser.setPassword(user.getPassword());
+                    } else {
+                        newUser.setPassword(passwordEncoder.encode(user.getPassword()));
+                    }
+                    userRepository.save(newUser);
+                });
+    }
+
+    @Override
+    @Transactional
+    public void deleteUser(Integer id) {
+        userRepository.deleteById(id);
+    }
+
+    @Override
     public User findByUsername(String username) {
         return userRepository.findByUsername(username);
     }

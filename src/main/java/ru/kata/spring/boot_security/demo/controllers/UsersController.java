@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import ru.kata.spring.boot_security.demo.models.Role;
 import ru.kata.spring.boot_security.demo.models.User;
-import ru.kata.spring.boot_security.demo.repositories.RoleRepository;
+import ru.kata.spring.boot_security.demo.service.RoleService;
 import ru.kata.spring.boot_security.demo.service.UserService;
 import ru.kata.spring.boot_security.demo.service.UserServiceImpl;
 
@@ -18,26 +18,24 @@ import java.util.List;
 
 @Controller
 public class UsersController {
-    private final UserService userService;
-    private final UserServiceImpl userServiceImpl;
 
-    private final RoleRepository roleRepository;
+    private final UserService userService;
+    private final RoleService roleService;
 
     @Autowired
-    public UsersController(UserService userService, UserServiceImpl userServiceImpl, RoleRepository roleRepository) {
+    public UsersController(UserService userService, RoleService roleService) {
         this.userService = userService;
-        this.userServiceImpl = userServiceImpl;
-        this.roleRepository = roleRepository;
+        this.roleService = roleService;
     }
 
     @GetMapping("/user")
     public String userPage(Principal principal, Model model) {
-        User user = userServiceImpl.findByUsername(principal.getName());
+        User user = userService.findByUsername(principal.getName());
         model.addAttribute("user", user);
         return "user";
     }
 
-    /////CRUD Operations///////////////////////////////////////
+    /////CRUD Operations//////
 
     @GetMapping("/admin")
     public String getAllUsers(Model model) {
@@ -52,16 +50,12 @@ public class UsersController {
     }
 
     @GetMapping("/admin/new")
-//    public String newUser(@ModelAttribute("user") User user) {
-//        return "new";
-//    }
     public ModelAndView newUser() {
         User user = new User();
         ModelAndView mav = new ModelAndView("/new");
         mav.addObject("user", user);
-        List<Role> roles = (List<Role>) roleRepository.findAll();
+        List<Role> roles = (List<Role>) roleService.getAllRole();
         mav.addObject("allRoles", roles);
-
         return mav;
     }
 
@@ -75,19 +69,12 @@ public class UsersController {
     }
 
     @GetMapping("/admin/{id}/edit")
-//    public String edit(Model model, @PathVariable("id") Integer id) {
-//        model.addAttribute("user", userService.findById(id));
-//        return "edit";
-//    }
     public ModelAndView editUser(@PathVariable(name = "id") Integer id) {
         User user = userService.findById(id);
         ModelAndView mav = new ModelAndView("edit");
         mav.addObject("user", user);
-
-        List<Role> roles = (List<Role>) roleRepository.findAll();
-
+        List<Role> roles = (List<Role>) roleService.getAllRole();
         mav.addObject("allRoles", roles);
-
         return mav;
     }
 
@@ -97,7 +84,7 @@ public class UsersController {
         if (bindingResult.hasErrors()) {
             return "edit";
         }
-        userService.updateUser(id, user);
+        userService.updateUser(user);
         return "redirect:/admin";
     }
 

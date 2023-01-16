@@ -12,8 +12,10 @@ public interface UserService {
 
     public User findById(Integer id);
 
-    public void updateUser(Integer id, User user);
+    public void updateUser(User user);
 
     public void deleteUser(Integer id);
+
+    public User findByUsername(String username);
 
 }
